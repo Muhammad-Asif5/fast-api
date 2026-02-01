@@ -21,7 +21,7 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     new_user = auth_service.register_user(db, user_data)
     if not new_user:
         raise HTTPException(status_code=400, detail="User registration failed")
-    raise HTTPException(status_code=200, detail=user_data.model_dump())
+    return new_user
 
 @router.post("/login", response_model=Token)
 def login(login_data: UserLogin, db: Session = Depends(get_db)):

@@ -13,7 +13,8 @@ class BaseRepository(Generic[ModelType]):
         return db.query(self.model).filter(self.model.id == id).first()
     
     def get_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[ModelType]:
-        return db.query(self.model).offset(skip).limit(limit).all()
+        # SQL Server requires ORDER BY when using OFFSET/LIMIT
+        return db.query(self.model).order_by(self.model.id).offset(skip).limit(limit).all()
     
     def create(self, db: Session, obj_in: dict) -> ModelType:
         db_obj = self.model(**obj_in)

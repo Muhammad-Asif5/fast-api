@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import Base, engine
-from app.api.v1 import auth
+from app.api.v1 import auth, users
 
 
 # Create database tables
@@ -27,15 +27,17 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
 
 
 @app.get("/")
 def root():
     """Root endpoint"""
     return {
-        "message": "Welcome to LMS FastAPI",
+        "message": "Welcome to LMS FastAPI with JWT Authentication",
         "version": settings.VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
+        "authentication": "JWT Bearer Token"
     }
 
 

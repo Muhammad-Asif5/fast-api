@@ -1,15 +1,13 @@
+from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
-import bcrypt  # Add this import
-from jose import JWTError, jwt
-# Remove these lines:
-# from passlib.context import CryptContext
-# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import bcrypt
 
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+from app.core.security import create_access_token
 from app.models.user import User
 from app.repositories.user_repository import user_repository
 from app.schemas.auth import UserCreate, Token
@@ -33,19 +31,6 @@ class AuthService:
         salt = bcrypt.gensalt()
         hashed = bcrypt.hashpw(password_bytes, salt)
         return hashed.decode('utf-8')
-    
-    @staticmethod
-    def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-        """Create a JWT access token"""
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        return encoded_jwt
     
     @staticmethod
     def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
@@ -104,7 +89,7 @@ class AuthService:
             )
         
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = AuthService.create_access_token(
+        access_token = create_access_token(
             data={"sub": user.username}, expires_delta=access_token_expires
         )
         
