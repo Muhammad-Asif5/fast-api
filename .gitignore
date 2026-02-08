@@ -15,3 +15,4 @@ app/schemas/__pycache__/auth_schema.cpython-314.pyc
 app/schemas/__pycache__/employee_schema.cpython-314.pyc
 app/services/__pycache__/auth_service.cpython-314.pyc
 app/services/__pycache__/employee_service.cpython-314.pyc
+app/core/__pycache__/exception_handlers.cpython-314.pyc

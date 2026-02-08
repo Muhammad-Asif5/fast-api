@@ -2,7 +2,6 @@ from datetime import datetime
 import os
 import shutil
 from typing import List, Optional
-import uuid
 from fastapi import APIRouter, Depends, Form, HTTPException, UploadFile, status
 from fastapi.params import File
 from sqlalchemy.orm import Session
@@ -14,6 +13,8 @@ from app.models.employee_model import Employee
 from app.schemas.employee_schema import EmployeeCreate, EmployeeResponse
 from app.repositories.employee_repository import employee_repository
 from app.services.employee_service import employee_service
+import uuid
+from uuid import UUID
 
 router = APIRouter(prefix="/Employees", tags=["Employees"])
 
@@ -133,7 +134,7 @@ def create_employee(
     DateOfBirth: str = Form(...),
     CNIC: str = Form(...),
     PhoneNo: str = Form(...),
-    UserId: Optional[str] = Form(None),
+    UserId: UUID = Form(...),
     HireDate: Optional[str] = Form(None),
     Salary: Optional[float] = Form(None),
     IsHourlySalary: Optional[bool] = Form(False),
@@ -148,6 +149,7 @@ def create_employee(
     Create a new employee with comprehensive validation
     
     Required fields:
+    - UserId: UUID of the user creating the employee (optional, will be generated if not provided)
     - email: Valid email address
     - CampusId: Campus identifier (positive integer)
     - DesignationId: Designation identifier (positive integer)
@@ -187,7 +189,7 @@ def create_employee(
         employee_data = EmployeeCreate(
             email=email,
             CampusId=CampusId,
-            UserId=uuid.UUID(UserId) if UserId else None,
+            UserId=UserId,
             DesignationId=DesignationId,
             HireDate=hire_date,
             Salary=Salary,
@@ -235,6 +237,18 @@ def create_employee(
         )
     
     try:
+        # Check for duplicate UserId if provided
+        existing_user = db.query(Employee).filter(
+            Employee.UserId == employee_data.UserId,
+            Employee.IsDeleted == False
+        ).first()
+
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Username ({UserId}) already registered"
+            )
+        
         # Check for duplicate CNIC
         existing_employee = db.query(Employee).filter(
             Employee.CNIC == employee_data.CNIC,
