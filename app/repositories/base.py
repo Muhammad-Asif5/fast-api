@@ -12,10 +12,10 @@ class BaseRepository(Generic[ModelType]):
     def get_by_id(self, db: Session, id: int) -> Optional[ModelType]:
         return db.query(self.model).filter(self.model.id == id).first()
     
-    def get_all(self, db: Session, skip: int = 0, limit: int = 100) -> List[ModelType]:
+    def get_all(self, db: Session, skip: int = 0, limit: int = 100, order_by: str = "id") -> List[ModelType]:
         # SQL Server requires ORDER BY when using OFFSET/LIMIT
-        return db.query(self.model).order_by(self.model.id).offset(skip).limit(limit).all()
-    
+        return db.query(self.model).order_by(getattr(self.model, order_by)).offset(skip).limit(limit).all()
+
     def create(self, db: Session, obj_in: dict) -> ModelType:
         db_obj = self.model(**obj_in)
         db.add(db_obj)

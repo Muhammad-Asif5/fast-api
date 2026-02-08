@@ -8,9 +8,9 @@ from fastapi import HTTPException, status
 
 from app.core.config import settings
 from app.core.security import create_access_token
-from app.models.user import User
+from app.models.user_model import User
 from app.repositories.user_repository import user_repository
-from app.schemas.auth import UserCreate, Token
+from app.schemas.auth_schema import UserCreate, Token
 
 
 class AuthService:
@@ -40,7 +40,7 @@ class AuthService:
             return None
         if not AuthService.verify_password(password, user.hashed_password):
             return None
-        if not user.is_active:
+        if not user.Isactive:
             return None
         return user
     

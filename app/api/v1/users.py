@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
-from app.models.user import User
-from app.schemas.auth import UserResponse
+from app.models.user_model import User
+from app.schemas.auth_schema import UserResponse
 from app.repositories.user_repository import user_repository
 
 router = APIRouter(prefix="/users", tags=["Users"])

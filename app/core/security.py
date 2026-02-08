@@ -7,9 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.models.user import User
+from app.models.user_model import User
 from app.repositories.user_repository import user_repository
-from app.schemas.auth import TokenData
+from app.schemas.auth_schema import TokenData
 
 # HTTP Bearer security scheme
 security = HTTPBearer()
@@ -66,7 +66,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if not user.is_active:
+    if not user.Isactive:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
@@ -80,6 +80,6 @@ def get_current_active_user(current_user: User = Depends(get_current_user)) -> U
     Dependency to ensure user is active
     Use this for endpoints that require active users only
     """
-    if not current_user.is_active:
+    if not current_user.Isactive:
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user

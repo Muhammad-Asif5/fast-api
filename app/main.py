@@ -3,8 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.core.database import Base, engine
-from app.api.v1 import auth, users
-
+from app.api.v1 import users
+from app.api.v1 import auth_controller, employee_controller
+ 
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -26,8 +27,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(auth.router, prefix="/api/v1")
+app.include_router(auth_controller.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(employee_controller.router, prefix="/api/v1")
 
 
 @app.get("/")

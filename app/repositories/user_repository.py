@@ -1,8 +1,8 @@
 from typing import Optional
 from sqlalchemy.orm import Session
-from app.models.user import User
+from app.models.user_model import User
 from app.repositories.base import BaseRepository
-
+import uuid
 
 class UserRepository(BaseRepository[User]):
     def __init__(self):
@@ -19,7 +19,8 @@ class UserRepository(BaseRepository[User]):
             username=username,
             email=email,
             hashed_password=hashed_password,
-            full_name=full_name
+            full_name=full_name,
+            CreatedBy=uuid.uuid8() # ✅ CORRECT
         )
         db.add(db_user)
         db.commit()

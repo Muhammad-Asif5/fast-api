@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
+from fastapi import Form, UploadFile, File
 from datetime import datetime
+from uuid import UUID
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
@@ -29,11 +31,13 @@ class UserLogin(BaseModel):
 
 class UserResponse(UserBase):
     id: int
-    is_active: bool
-    created_at: datetime
-    
+    CreatedBy: Optional[UUID] = None
+    IsActive: bool = Field(alias="Isactive")
+    CreatedDate: datetime
+
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class Token(BaseModel):
@@ -43,3 +47,4 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
