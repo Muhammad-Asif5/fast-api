@@ -21,8 +21,8 @@ class UserBase(BaseModel):
 
 
 class UserCreate(BaseModel):
-    username: str
-    email: str
+    username: str = Field(..., min_length=3, max_length=50)
+    email: EmailStr  # ✅ EmailStr ensures only valid emails
     password: str = Field(..., min_length=8, max_length=72)
     full_name: Optional[str] = None  # Add this line
     
