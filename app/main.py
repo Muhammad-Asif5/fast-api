@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
@@ -8,6 +8,7 @@ from app.api.v1 import auth_controller, employee_controller
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.exception_handlers import (
+    http_exception_handler,
     validation_exception_handler,
     integrity_exception_handler,
     sqlalchemy_exception_handler,
@@ -55,6 +56,7 @@ app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(IntegrityError, integrity_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
+app.add_exception_handler(HTTPException, http_exception_handler)
 
 # Include routers
 app.include_router(auth_controller.router, prefix="/api/v1")

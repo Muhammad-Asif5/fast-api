@@ -1,8 +1,18 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
-from typing import Optional
+from typing import Generic, TypeVar, Optional, List
 from fastapi import Form, UploadFile, File
 from datetime import datetime
 from uuid import UUID
+from pydantic.generics import GenericModel
+
+T = TypeVar("T")
+
+class ApiResponse(GenericModel, Generic[T]):
+    message: str
+    success: bool
+    statusCode: int
+    errors: List[str] = Field(default_factory=list)
+    data: Optional[T] = None
 
 class UserBase(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)

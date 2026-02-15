@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.security import create_access_token
 from app.models.user_model import User
 from app.repositories.user_repository import user_repository
-from app.schemas.auth_schema import UserCreate, Token
+from app.schemas.auth_schema import UserCreate, Token, UserResponse
 
 
 class AuthService:
@@ -75,7 +75,7 @@ class AuthService:
             full_name=user_data.full_name if hasattr(user_data, 'full_name') else None
         )
         
-        return new_user
+        return UserResponse.model_validate(new_user)
     
     @staticmethod
     def login(db: Session, username: str, password: str) -> Token:

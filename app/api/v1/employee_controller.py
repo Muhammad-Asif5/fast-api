@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from pydantic import ValidationError
 
 from app.core.database import get_db
+from app.core.response import success_response
 from app.core.security import get_current_active_user
 from app.models.employee_model import Employee
 from app.schemas.employee_schema import EmployeeCreate, EmployeeResponse
@@ -85,7 +86,7 @@ def save_uploaded_file(file: UploadFile) -> str:
 def get_all_employees(
     skip: int = 0, 
     limit: int = 100,
-    current_user: Employee = Depends(get_current_active_user),
+    # current_user: Employee = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -97,15 +98,23 @@ def get_all_employees(
     - skip: Number of records to skip (pagination)
     - limit: Maximum number of records to return (max: 100)
     """
+    
     if limit > 100:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit cannot exceed 100"
+            detail="Limit must be between 1 and 100"
         )
     
     employees = employee_repository.get_all(db, skip=skip, limit=limit)
-    return employees
-
+    # Convert ORM objects to Pydantic schemas
+    employees_schema = [EmployeeResponse.model_validate(emp) for emp in employees]
+     # If DB may contain invalid data, use model_construct() instead
+     
+    return success_response(
+        data=employees_schema,
+        message=f"{len(employees_schema)} employee(s) retrieved",
+        status_code=status.HTTP_200_OK
+    )
 
 @router.get("/{employee_id}", response_model=EmployeeResponse)
 def get_employee(

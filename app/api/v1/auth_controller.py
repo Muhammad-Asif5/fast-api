@@ -1,9 +1,11 @@
+from email import message
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.auth_schema import UserCreate, UserLogin, UserResponse, Token
+from app.schemas.auth_schema import ApiResponse, UserCreate, UserLogin, UserResponse, Token
 from app.services.auth_service import auth_service
+from app.core.response import success_response
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -21,9 +23,10 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
     new_user = auth_service.register_user(db, user_data)
     if not new_user:
         raise HTTPException(status_code=400, detail="User registration failed")
-    return new_user
+    # user_schema = UserResponse.model_validate(new_user)
+    return success_response(new_user, "User created", 201)
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=ApiResponse[Token])
 def login(login_data: UserLogin, db: Session = Depends(get_db)):
     """
     Login with username and password
@@ -38,7 +41,11 @@ def login(login_data: UserLogin, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect username or password 111",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return token  # ✅ Return the token, don't raise HTTPException
+    return success_response(
+        data=token,
+        message="Login successful",
+        status_code=200
+    )

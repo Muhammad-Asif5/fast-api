@@ -1,9 +1,10 @@
-from fastapi import Request, status
+from fastapi import HTTPException, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
+from app.core.response import error_response
+from app.schemas.auth_schema import ApiResponse
+from fastapi.encoders import jsonable_encoder
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Handle Pydantic validation errors"""
@@ -15,15 +16,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": error['msg'],
             "type": error['type']
         })
-    
-    return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={
-            "detail": "Validation error",
-            "errors": errors
-        }
-    )
 
+    raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Validation error: {errors}"
+        )
 
 async def integrity_exception_handler(request: Request, exc: IntegrityError):
     """Handle database integrity errors (duplicates, foreign keys, etc.)"""
@@ -55,32 +52,41 @@ async def integrity_exception_handler(request: Request, exc: IntegrityError):
             }
         )
     
-    return JSONResponse(
-        status_code=status.HTTP_400_BAD_REQUEST,
-        content={
-            "detail": "Database integrity error",
-            "message": "The operation violates database constraints"
-        }
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=f"Database integrity error: {error_message}",
+        errors=[str(exc.orig)]
     )
 
 
 async def sqlalchemy_exception_handler(request: Request, exc: SQLAlchemyError):
     """Handle general SQLAlchemy errors"""
-    return JSONResponse(
+    return error_response(
+        message="Database error",
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "detail": "Database error",
-            "message": "An error occurred while processing your request"
-        }
+        errors=[str(exc)]
     )
 
 
 async def general_exception_handler(request: Request, exc: Exception):
     """Handle unexpected errors"""
-    return JSONResponse(
+    return error_response(
+        message="Internal server error",
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "detail": "Internal server error",
-            "message": "An unexpected error occurred"
-        }
+        errors=[str(exc)]
     )
+
+async def http_exception_handler(request: Request, exc: HTTPException):
+    response = ApiResponse(
+        message="Request failed",
+        success=False,
+        statusCode=exc.status_code,
+        errors=[exc.detail] if isinstance(exc.detail, str) else exc.detail,
+        data=None
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=jsonable_encoder(response)
+    )
+
