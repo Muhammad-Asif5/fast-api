@@ -1,4 +1,5 @@
 from typing import Generic, TypeVar, Type, Optional, List
+from sqlalchemy import String
 from sqlalchemy.orm import Session
 from app.core.database import Base
 
@@ -9,8 +10,22 @@ class BaseRepository(Generic[ModelType]):
     def __init__(self, model: Type[ModelType]):
         self.model = model
     
-    def get_by_id(self, db: Session, id: int) -> Optional[ModelType]:
-        return db.query(self.model).filter(self.model.id == id).first()
+    def get_by_id(self, db: Session, id: int):
+        primary_key = list(self.model.__table__.primary_key.columns)[0]
+        return db.query(self.model).filter(primary_key == id, self.model.IsDeleted == False).first()
+    
+    def get_by_email(self, db: Session, email: str):
+        return db.query(self.model).filter(
+            self.model.Email == email,
+            self.model.IsDeleted == False
+        ).first()
+    
+    def get_by_duplicate_email(self, db: Session, email: str, employeeId: int):
+        return db.query(self.model).filter(
+            self.model.Email == email,
+            self.model.EmployeeId != employeeId,
+            self.model.IsDeleted == False
+        ).first()
     
     def get_all(self, db: Session, skip: int = 0, limit: int = 100, order_by: str = "id") -> List[ModelType]:
         # SQL Server requires ORDER BY when using OFFSET/LIMIT

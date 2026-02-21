@@ -4,6 +4,7 @@ from app.models.base import BaseModel
 from sqlalchemy.dialects.mssql import UNIQUEIDENTIFIER
 
 class Employee(BaseModel):
+    __primary_key__ = "EmployeeId",
     __tablename__ = "Employees"
     __table_args__ = {"schema": "academic"}  # SQL Server schema - MUST BE UNCOMMENTED
     
