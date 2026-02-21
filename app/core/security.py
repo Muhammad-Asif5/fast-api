@@ -1,5 +1,6 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
@@ -11,75 +12,54 @@ from app.models.user_model import User
 from app.repositories.user_repository import user_repository
 from app.schemas.auth_schema import TokenData
 
-# HTTP Bearer security scheme
 security = HTTPBearer()
+
+_CREDENTIALS_EXCEPTION = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token"""
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
+    expire = datetime.now(timezone.utc) + (
+        expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+    return jwt.encode(
+        {**data, "exp": expire},
+        settings.SECRET_KEY,
+        algorithm=settings.ALGORITHM,
+    )
 
 
 def decode_access_token(token: str) -> TokenData:
-    """Decode and validate JWT token"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-        return token_data
+        username: Optional[str] = payload.get("sub")
+        if not username:
+            raise _CREDENTIALS_EXCEPTION
+        return TokenData(username=username)
     except JWTError:
-        raise credentials_exception
+        raise _CREDENTIALS_EXCEPTION
 
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ) -> User:
-    """
-    Dependency to get the current authenticated user from JWT token
-    Use this in your protected endpoints
-    """
-    token = credentials.credentials
-    token_data = decode_access_token(token)
-    
+    token_data = decode_access_token(credentials.credentials)
     user = user_repository.get_by_username(db, username=token_data.username)
-    if user is None:
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
-    if not user.Isactive:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
-        )
-    
+    if not user.IsActive:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
     return user
 
 
 def get_current_active_user(current_user: User = Depends(get_current_user)) -> User:
-    """
-    Dependency to ensure user is active
-    Use this for endpoints that require active users only
-    """
-    if not current_user.Isactive:
-        raise HTTPException(status_code=400, detail="Inactive user")
+    """Alias kept for backward compatibility; active check is already in get_current_user."""
     return current_user

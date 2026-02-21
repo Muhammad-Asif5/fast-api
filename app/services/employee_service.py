@@ -1,14 +1,13 @@
-from datetime import date, datetime
+from datetime import datetime
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, UploadFile, status
 import os
 
-from app.common.date_utils import ensure_datetime
+from app.common import GenderEnum
+from app.common.date_utils import to_datetime
 from app.models.employee_model import Employee
-from app.models.user_model import User
 from app.repositories.employee_repository import employee_repository
 from app.schemas.employee_schema import EmployeeCreate
-from app.services.auth_service import AuthService
 from app.common import parse_date, validate_image_file, save_uploaded_file
 
 import uuid
@@ -33,28 +32,28 @@ class EmployeeService:
             )
         raw_data["Gender"] = gender_value
 
-        # 2️⃣ Create Pydantic object (no image yet)
+         # 2️⃣ Create Pydantic object (no image yet)
+        if employee_repository.get_by_cnic(db, raw_data["CNIC"]):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Employee with CNIC {raw_data['CNIC']} already exists"
+            )
+        
+        # 3️⃣ Check duplicates BEFORE saving image
+        if employee_repository.get_by_email(db, raw_data["Email"]):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Employee with Email {raw_data['Email']} already exists"
+            )
+
         employee_data = EmployeeCreate(
             **raw_data,
             ImagePath=None,
             CreatedDate=datetime.utcnow(),
             CreatedBy=current_user.EmployeeId if hasattr(current_user, "EmployeeId") else uuid.uuid4(),
             IsDeleted=False,
-            Isactive=True
+            IsActive=True
         )
-
-        # 3️⃣ Check duplicates BEFORE saving image
-        if employee_repository.get_by_cnic(db, employee_data.CNIC):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Employee with CNIC {employee_data.CNIC} already exists"
-            )
-
-        if employee_repository.get_by_email(db, employee_data.Email):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Employee with Email {employee_data.Email} already exists"
-            )
 
         # 4️⃣ Now save image safely
         image_path = None
@@ -82,16 +81,7 @@ class EmployeeService:
             )
         return db_employee
 
-
-    
-
-
-
-
-
-
-    
-    def update_employee(self,db: Session, employee_id: int, update_fields: dict, image, current_user: Employee):
+    def update_employee(self, db: Session, employee_id: int, update_fields: dict, image, current_user):
             
             employee = employee_repository.get_by_id(db, employee_id)
 
@@ -109,10 +99,10 @@ class EmployeeService:
                 # Handle Date
                 # -----------------------
                 if "DateOfBirth" in update_fields:
-                    update_fields["DateOfBirth"] = ensure_datetime(parse_date(update_fields["DateOfBirth"]))
+                    update_fields["DateOfBirth"] = to_datetime(parse_date(update_fields["DateOfBirth"]))
 
                 if "HireDate" in update_fields:
-                    update_fields["HireDate"] = ensure_datetime(parse_date(update_fields["HireDate"]))
+                    update_fields["HireDate"] = to_datetime(parse_date(update_fields["HireDate"]))
 
                 # -----------------------
                 # Handle Image

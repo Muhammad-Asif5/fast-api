@@ -9,7 +9,7 @@ class BaseModel(Base):
     
     CreatedDate = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     CreatedBy = Column(UNIQUEIDENTIFIER, nullable=False)
-    ModifiedDate = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
+    ModifiedDate = Column(DateTime(timezone=True), onupdate=func.now(), nullable=True)
     ModifiedBy = Column(UNIQUEIDENTIFIER, nullable=True)
     IsDeleted = Column(Boolean, server_default=text("0"), nullable=False)
-    Isactive = Column(Boolean, server_default=text("1"), nullable=False)
+    IsActive = Column(Boolean, server_default=text("1"), nullable=False)

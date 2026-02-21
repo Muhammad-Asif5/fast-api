@@ -10,6 +10,7 @@ from app.core.database import get_db
 from app.core.response import success_response
 from app.core.security import get_current_active_user
 from app.models.employee_model import Employee
+from app.models.user_model import User
 from app.schemas.employee_schema import EmployeeCreate, EmployeeResponse
 from app.repositories.employee_repository import employee_repository
 from app.services.employee_service import employee_service
@@ -19,13 +20,11 @@ from app.common import parse_date, validate_image_file, save_uploaded_file
 
 router = APIRouter(prefix="/Employees", tags=["Employees"])
 
-# Configuration
-
 @router.get("/", response_model=List[EmployeeResponse])
 def get_all_employees(
     skip: int = 0, 
     limit: int = 100,
-    # current_user: Employee = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -58,7 +57,7 @@ def get_all_employees(
 @router.get("/{employee_id}", response_model=EmployeeResponse)
 def get_employee(
     employee_id: int,
-    current_user: Employee = Depends(get_current_active_user),
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get a specific employee by ID"""
@@ -68,8 +67,12 @@ def get_employee(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Employee with ID {employee_id} not found"
         )
-    return employee
-
+    
+    return success_response(
+        data=EmployeeResponse.model_validate(employee),
+        message=f"Employee with Id {employee_id} retrieved",
+        status_code=status.HTTP_200_OK
+    )
 
 @router.post("/", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED)
 def create_employee(
@@ -132,13 +135,18 @@ def create_employee(
         "UserId": UserId
     }
 
-    return employee_service.create_employee(
+    employee = employee_service.create_employee(
         db=db,
         raw_data=raw_data,
         image=image,
         current_user=current_user
     )
 
+    return success_response(
+        data=EmployeeResponse.model_validate(employee),
+        message=f"Employee created successfully",
+        status_code=status.HTTP_201_CREATED
+    )
 
 @router.put("/{employeeId}", response_model=EmployeeResponse)
 def update_employee(
@@ -179,12 +187,18 @@ def update_employee(
         "MobileNo": MobileNo
     }
 
-    return employee_service.update_employee(
+    update_data = employee_service.update_employee(
         db=db,
         employee_id=employeeId,
         update_fields=update_data,
         image=image,
         current_user=current_user
+    )
+
+    return success_response(
+        data=EmployeeResponse.model_validate(update_data),
+        message=f"Employee updated successfully",
+        status_code=status.HTTP_200_OK
     )
 
 @router.delete("/{employee_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -202,7 +216,10 @@ def delete_employee(
         )
     
     employee.IsDeleted = True
-    employee.Isactive = False
+    employee.IsActive = False
     db.commit()
     
-    return None
+    return success_response(
+        message=f"Employee with ID {employee_id} has been deleted",
+        status_code=status.HTTP_200_OK
+    )

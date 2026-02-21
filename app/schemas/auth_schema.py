@@ -42,7 +42,7 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     id: int
     CreatedBy: Optional[UUID] = None
-    IsActive: bool = Field(alias="Isactive")
+    IsActive: bool = Field(alias="IsActive")
     CreatedDate: datetime
 
     class Config:

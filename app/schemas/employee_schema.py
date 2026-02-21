@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional, Union
 from uuid import UUID
@@ -7,7 +8,7 @@ import re
 class EmployeeResponse(BaseModel):
     EmployeeId: int
     CreatedBy: Optional[UUID] = None
-    IsActive: bool = Field(alias="Isactive")
+    IsActive: bool = Field(alias="IsActive")
     CreatedDate: datetime
     FullName: str
     FatherName: str
@@ -56,7 +57,7 @@ class EmployeeCreate(BaseModel):
     CreatedBy: Optional[UUID] = None
     CreatedDate: Optional[datetime] = None
     IsDeleted: Optional[bool] = False
-    Isactive: Optional[bool] = True
+    IsActive: Optional[bool] = True
 
     @field_validator('FullName', 'FatherName')
     @classmethod
@@ -104,13 +105,13 @@ class EmployeeCreate(BaseModel):
         age = today.year - v_date.year - ((today.month, today.day) < (v_date.month, v_date.day))
         
         if v_date > today:
-            raise ValueError('Date of birth cannot be in the future')
+            raise HTTPException(status_code=400, detail=f"Date of birth cannot be in the future")
         
         if age < 18:
-            raise ValueError('Employee must be at least 18 years old')
+            raise HTTPException(status_code=400, detail=f"Employee must be at least 18 years old")
         
         if age > 100:
-            raise ValueError('Invalid date of birth (age > 100 years)')
+            raise HTTPException(status_code=400, detail=f"Invalid date of birth (age > 100 years)")
         
         # Convert to datetime for database compatibility
         if isinstance(v, date) and not isinstance(v, datetime):
@@ -127,7 +128,7 @@ class EmployeeCreate(BaseModel):
         # Check if it's 13 digits
         if not re.match(r'^\d{13}$', cleaned):
             raise ValueError('CNIC must be 13 digits (format: XXXXX-XXXXXXX-X or XXXXXXXXXXXXX)')
-        
+            
         # Return formatted version
         return f"{cleaned[:5]}-{cleaned[5:12]}-{cleaned[12]}"
 
