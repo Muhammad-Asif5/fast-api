@@ -73,7 +73,7 @@ def get_employee(
 
 @router.post("/", response_model=EmployeeResponse, status_code=status.HTTP_201_CREATED)
 def create_employee(
-    email: str = Form(...),
+    Email: str = Form(...),
     CampusId: int = Form(...),
     DesignationId: int = Form(...),
     FullName: str = Form(...),
@@ -112,150 +112,38 @@ def create_employee(
     - image: Profile image (JPG, PNG, GIF, WEBP - max 5MB)
     - HireDate, Salary, Experience, BloodGroup, MobileNo, etc.
     """
-    
-    # Validate and save image if provided
-    image_path = None
-    if image and image.filename:
-        try:
-            validate_image_file(image)
-            image_path = save_uploaded_file(image)
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Image upload failed: {str(e)}"
-            )
-    
-    try:
-        # Parse and validate dates
-        from datetime import datetime
-        date_of_birth = datetime.fromisoformat(DateOfBirth).date() if DateOfBirth else None
-        hire_date = datetime.fromisoformat(HireDate).date() if HireDate else None
-        
-        # Create employee data with Pydantic validation
-        employee_data = EmployeeCreate(
-            email=email,
-            CampusId=CampusId,
-            UserId=UserId,
-            DesignationId=DesignationId,
-            HireDate=hire_date,
-            Salary=Salary,
-            IsHourlySalary=IsHourlySalary,
-            Experience=Experience,
-            FullName=FullName,
-            FatherName=FatherName,
-            Gender=Gender,
-            DateOfBirth=date_of_birth,
-            CNIC=CNIC,
-            BloodGroup=BloodGroup,
-            MobileNo=MobileNo,
-            PhoneNo=PhoneNo,
-            ImagePath=image_path,
-            CreatedDate=datetime.utcnow(),
-            CreatedBy=current_user.EmployeeId if hasattr(current_user, 'EmployeeId') else uuid.uuid4(),
-            IsDeleted=False,
-            Isactive=True
-        )
-    except ValueError as e:
-        # Clean up uploaded image if validation fails
-        if image_path and os.path.exists(image_path):
-            os.remove(image_path)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid date format: {str(e)}"
-        )
-    except ValidationError as e:
-        # Clean up uploaded image if validation fails
-        if image_path and os.path.exists(image_path):
-            os.remove(image_path)
-        
-        # Format validation errors
-        errors = []
-        for error in e.errors():
-            field = ' -> '.join(str(loc) for loc in error['loc'])
-            errors.append(f"{field}: {error['msg']}")
-        
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail={
-                "message": "Validation failed",
-                "errors": errors
-            }
-        )
-    
-    try:
-        # Check for duplicate UserId if provided
-        existing_user = db.query(Employee).filter(
-            Employee.UserId == employee_data.UserId,
-            Employee.IsDeleted == False
-        ).first()
+     
+    raw_data = {
+        "Email": Email,
+        "CampusId": CampusId,
+        "DesignationId": DesignationId,
+        "FullName": FullName,
+        "FatherName": FatherName,
+        "Gender": Gender,
+        "DateOfBirth": DateOfBirth,
+        "HireDate": HireDate,
+        "CNIC": CNIC,
+        "PhoneNo": PhoneNo,
+        "MobileNo": MobileNo,
+        "BloodGroup": BloodGroup,
+        "Salary": Salary,
+        "IsHourlySalary": IsHourlySalary,
+        "Experience": Experience,
+        "UserId": UserId
+    }
 
-        if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Username ({UserId}) already registered"
-            )
-        
-        # Check for duplicate CNIC
-        existing_employee = db.query(Employee).filter(
-            Employee.CNIC == employee_data.CNIC,
-            Employee.IsDeleted == False
-        ).first()
-        
-        if existing_employee:
-            # Clean up uploaded image
-            if image_path and os.path.exists(image_path):
-                os.remove(image_path)
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Employee with this CNIC already exists"
-            )
-        
-        # Check for duplicate email
-        existing_email = db.query(Employee).filter(
-            Employee.Email == employee_data.email,
-            Employee.IsDeleted == False
-        ).first()
-        
-        if existing_email:
-            # Clean up uploaded image
-            if image_path and os.path.exists(image_path):
-                os.remove(image_path)
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Employee with this email already exists"
-            )
-        
-        # Create employee
-        new_employee = employee_service.register_user(db, employee_data)
-        if not new_employee:
-            # Clean up uploaded image
-            if image_path and os.path.exists(image_path):
-                os.remove(image_path)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Employee registration failed"
-            )
-        
-        return new_employee
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        # Clean up uploaded image on any error
-        if image_path and os.path.exists(image_path):
-            os.remove(image_path)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create employee: {str(e)}"
-        )
+    return employee_service.create_employee(
+        db=db,
+        raw_data=raw_data,
+        image=image,
+        current_user=current_user
+    )
 
 
 @router.put("/{employeeId}", response_model=EmployeeResponse)
 def update_employee(
     employeeId: int,
-    email: Optional[str] = Form(None),
+    Email: Optional[str] = Form(None),
     CampusId: Optional[int] = Form(None),
     DesignationId: Optional[int] = Form(None),
     FullName: Optional[str] = Form(None),
@@ -275,7 +163,7 @@ def update_employee(
 ):
 
     update_data = {
-        "Email": email,
+        "Email": Email,
         "CampusId": CampusId,
         "DesignationId": DesignationId,
         "FullName": FullName,

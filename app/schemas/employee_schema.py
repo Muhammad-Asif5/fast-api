@@ -32,7 +32,7 @@ class EmployeeResponse(BaseModel):
 
 class EmployeeCreate(BaseModel):
     # Required fields
-    email: EmailStr = Field(..., description="Valid email address")
+    Email: EmailStr = Field(..., description="Valid email address")
     CampusId: int = Field(..., gt=0, description="Campus ID must be positive")
     DesignationId: int = Field(..., gt=0, description="Designation ID must be positive")
     FullName: str = Field(..., min_length=2, max_length=100, description="Full name required")
@@ -162,7 +162,7 @@ class EmployeeCreate(BaseModel):
         
         return v_upper
 
-    @field_validator('email')
+    @field_validator('Email')
     @classmethod
     def validate_email_domain(cls, v: EmailStr) -> EmailStr:
         """Additional email validation (optional: restrict to company domains)"""
@@ -248,7 +248,7 @@ class EmployeeCreate(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "email": "john.doe@company.com",
+                "Email": "john.doe@company.com",
                 "CampusId": 1,
                 "DesignationId": 5,
                 "FullName": "John Doe",

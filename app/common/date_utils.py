@@ -15,3 +15,11 @@ def parse_date(date_str: str) -> date:
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=f"Invalid date format: {date_str}. Use YYYY-MM-DD or DD/MM/YYYY"
     )
+
+def ensure_datetime(d):
+    """Convert date to datetime if needed"""
+    if d is None:
+        return None
+    if isinstance(d, date) and not isinstance(d, datetime):
+        return datetime.combine(d, datetime.min.time())
+    return d

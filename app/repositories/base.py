@@ -14,6 +14,12 @@ class BaseRepository(Generic[ModelType]):
         primary_key = list(self.model.__table__.primary_key.columns)[0]
         return db.query(self.model).filter(primary_key == id, self.model.IsDeleted == False).first()
     
+    def get_by_cnic(self, db: Session, cnic: str):
+        return db.query(self.model).filter(
+            self.model.CNIC == cnic,
+            self.model.IsDeleted == False
+        ).first()
+
     def get_by_email(self, db: Session, email: str):
         return db.query(self.model).filter(
             self.model.Email == email,

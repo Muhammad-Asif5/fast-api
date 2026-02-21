@@ -4,7 +4,7 @@ import uuid
 from uuid import UUID
 import shutil
 
-UPLOAD_DIR = "uploads/employees"
+UPLOAD_DIR = "uploads\employees"
 ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
