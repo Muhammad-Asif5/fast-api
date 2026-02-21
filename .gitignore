@@ -21,3 +21,4 @@ app/common/__pycache__/__init__.cpython-314.pyc
 app/common/__pycache__/date_utils.cpython-314.pyc
 app/common/__pycache__/file_utils.cpython-314.pyc
 app/core/__pycache__/__init__.cpython-314.pyc
+app/common/__pycache__/constants.cpython-314.pyc
